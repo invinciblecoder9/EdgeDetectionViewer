@@ -1,0 +1,14 @@
+{
+  "name": "edge-detection-viewer",
+  "version": "1.0.0",
+  "description": "Web viewer for edge detection frames",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "serve": "python -m http.server 8000"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
