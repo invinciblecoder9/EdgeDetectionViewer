@@ -233,7 +233,6 @@ class MainActivity : AppCompatActivity() {
         val buffer = planes[0].buffer
         val bytes = ByteArray(buffer.remaining())
         buffer.get(bytes)
-
         return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     }
 
