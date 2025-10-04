@@ -1,5 +1,4 @@
 #include "EdgeDetector.h"
-#include <chrono>
 
 EdgeDetector::EdgeDetector()
         : lowThreshold(50.0), highThreshold(150.0), processingEnabled(true) {
@@ -23,26 +22,30 @@ double EdgeDetector::processFrame(unsigned char* srcData, int width, int height,
             srcMat.copyTo(dstMat);
         } else {
             // Convert to grayscale
-            cv::cvtColor(srcMat, tempGray, cv::COLOR_RGBA2GRAY);
+            cv::Mat gray;
+            cv::cvtColor(srcMat, gray, cv::COLOR_RGBA2GRAY);
 
             // Apply Gaussian blur to reduce noise
-            cv::GaussianBlur(tempGray, tempGray, cv::Size(5, 5), 1.5);
+            cv::GaussianBlur(gray, gray, cv::Size(5, 5), 1.5);
 
             // Apply Canny edge detection
-            cv::Canny(tempGray, edges, lowThreshold, highThreshold);
+            cv::Mat edges;
+            cv::Canny(gray, edges, lowThreshold, highThreshold);
 
             // Convert back to RGBA for display
-            // White edges on black background
             cv::cvtColor(edges, dstMat, cv::COLOR_GRAY2RGBA);
         }
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-        return duration.count();
+        return static_cast<double>(duration.count());
 
     } catch (const cv::Exception& e) {
         LOGE("OpenCV exception: %s", e.what());
+        return -1.0;
+    } catch (...) {
+        LOGE("Unknown exception in processFrame");
         return -1.0;
     }
 }

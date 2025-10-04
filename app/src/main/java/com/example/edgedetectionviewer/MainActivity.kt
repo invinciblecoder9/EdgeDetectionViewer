@@ -1,135 +1,93 @@
-//package com.example.edgedetectionviewer
-//
-//import android.os.Bundle
-//import androidx.activity.ComponentActivity
-//import androidx.activity.compose.setContent
-//import androidx.activity.enableEdgeToEdge
-//import androidx.compose.foundation.layout.fillMaxSize
-//import androidx.compose.foundation.layout.padding
-//import androidx.compose.material3.Scaffold
-//import androidx.compose.material3.Text
-//import androidx.compose.runtime.Composable
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.tooling.preview.Preview
-//import com.example.edgedetectionviewer.ui.theme.EdgeDetectionViewerTheme
-//
-//class MainActivity : ComponentActivity() {
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
-//        setContent {
-//            EdgeDetectionViewerTheme {
-//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-//                    Greeting(
-//                        name = "Android",
-//                        modifier = Modifier.padding(innerPadding)
-//                    )
-//                }
-//            }
-//        }
-//    }
-//}
-//
-//@Composable
-//fun Greeting(name: String, modifier: Modifier = Modifier) {
-//    Text(
-//        text = "Hello $name!",
-//        modifier = modifier
-//    )
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun GreetingPreview() {
-//    EdgeDetectionViewerTheme {
-//        Greeting("Android")
-//    }
-//}
-
 package com.example.edgedetectionviewer
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.opengl.GLSurfaceView
 import android.os.Bundle
-import android.util.Log
-import android.widget.Button
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.*
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.edgedetectionviewer.gl.CameraRenderer
-import com.example.edgedetectionviewer.processors.NativeProcessor
+import org.opencv.android.OpenCVLoader
+import org.opencv.core.Mat
+import org.opencv.core.CvType
+import org.opencv.imgproc.Imgproc
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import android.graphics.Bitmap
+import android.widget.ImageView
+import android.widget.LinearLayout
+import org.opencv.core.Size
 
 class MainActivity : AppCompatActivity() {
 
-    private val TAG = "MainActivity"
-    private val CAMERA_PERMISSION_CODE = 100
-
-    private lateinit var glSurfaceView: GLSurfaceView
-    private lateinit var renderer: CameraRenderer
-    private lateinit var btnToggle: Button
-    private lateinit var tvFps: TextView
-    private lateinit var tvResolution: TextView
-
+    private lateinit var previewView: PreviewView
+    private lateinit var edgeImageView: ImageView
     private lateinit var cameraExecutor: ExecutorService
-    private lateinit var nativeProcessor: NativeProcessor
 
-    private var isProcessingEnabled = true
-    private var frameCount = 0
-    private var lastFpsTime = System.currentTimeMillis()
-    private var currentFps = 0.0
+    companion object {
+        private const val CAMERA_PERMISSION_CODE = 100
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        // Initialize views
-        glSurfaceView = findViewById(R.id.glSurfaceView)
-        btnToggle = findViewById(R.id.btnToggle)
-        tvFps = findViewById(R.id.tvFps)
-        tvResolution = findViewById(R.id.tvResolution)
-
-        // Setup OpenGL
-        glSurfaceView.setEGLContextClientVersion(2)
-        renderer = CameraRenderer()
-        glSurfaceView.setRenderer(renderer)
-        glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
-
-        // Initialize native processor
-        nativeProcessor = NativeProcessor()
-
-        // Setup camera executor
-        cameraExecutor = Executors.newSingleThreadExecutor()
-
-        // Setup toggle button
-        btnToggle.setOnClickListener {
-            isProcessingEnabled = !isProcessingEnabled
-            nativeProcessor.setProcessingEnabled(isProcessingEnabled)
-            btnToggle.text = if (isProcessingEnabled) "Show Raw" else "Show Edges"
+        // Initialize OpenCV
+        if (!OpenCVLoader.initDebug()) {
+            Toast.makeText(this, "OpenCV initialization failed!", Toast.LENGTH_SHORT).show()
+            finish()
+            return
         }
 
-        // Check permissions
-        if (checkPermissions()) {
+        // Create UI
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        previewView = PreviewView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        }
+
+        edgeImageView = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+
+        layout.addView(previewView)
+        layout.addView(edgeImageView)
+        setContentView(layout)
+
+        cameraExecutor = Executors.newSingleThreadExecutor()
+
+        // Check camera permission
+        if (checkCameraPermission()) {
             startCamera()
         } else {
-            requestPermissions()
+            requestCameraPermission()
         }
     }
 
-    private fun checkPermissions(): Boolean {
+    private fun checkCameraPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
-            this, Manifest.permission.CAMERA
+            this,
+            Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun requestPermissions() {
+    private fun requestCameraPermission() {
         ActivityCompat.requestPermissions(
             this,
             arrayOf(Manifest.permission.CAMERA),
@@ -139,7 +97,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>,
+        permissions: Array<String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -147,7 +105,7 @@ class MainActivity : AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startCamera()
             } else {
-                Toast.makeText(this, "Camera permission required", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Camera permission required!", Toast.LENGTH_SHORT).show()
                 finish()
             }
         }
@@ -159,16 +117,17 @@ class MainActivity : AppCompatActivity() {
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
 
-            // Setup image analysis
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(previewView.surfaceProvider)
+            }
+
             val imageAnalysis = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor, EdgeDetectionAnalyzer())
+                }
 
-            imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                processImage(imageProxy)
-            }
-
-            // Select back camera
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
@@ -176,69 +135,74 @@ class MainActivity : AppCompatActivity() {
                 cameraProvider.bindToLifecycle(
                     this,
                     cameraSelector,
+                    preview,
                     imageAnalysis
                 )
-
-                Log.i(TAG, "Camera started successfully")
-
             } catch (e: Exception) {
-                Log.e(TAG, "Camera binding failed", e)
+                Toast.makeText(this, "Camera failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
 
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private fun processImage(imageProxy: ImageProxy) {
-        try {
-            // Convert ImageProxy to Bitmap
-            val srcBitmap = imageProxy.toBitmap()
-            val dstBitmap = Bitmap.createBitmap(
-                srcBitmap.width,
-                srcBitmap.height,
-                Bitmap.Config.ARGB_8888
-            )
+    private inner class EdgeDetectionAnalyzer : ImageAnalysis.Analyzer {
+        override fun analyze(image: ImageProxy) {
+            val bitmap = image.toBitmap()
+            val edgeBitmap = detectEdges(bitmap)
 
-            // Process with native code
-            val processingTime = nativeProcessor.processFrame(srcBitmap, dstBitmap)
-
-            // Update renderer
-            renderer.currentBitmap = dstBitmap
-            glSurfaceView.requestRender()
-
-            // Calculate FPS
-            frameCount++
-            val currentTime = System.currentTimeMillis()
-            val elapsed = currentTime - lastFpsTime
-
-            if (elapsed >= 1000) {
-                currentFps = (frameCount * 1000.0) / elapsed
-                frameCount = 0
-                lastFpsTime = currentTime
-
-                runOnUiThread {
-                    tvFps.text = String.format("FPS: %.1f | Processing: %.1f ms", currentFps, processingTime)
-                    tvResolution.text = "Resolution: ${srcBitmap.width}x${srcBitmap.height}"
-                }
+            runOnUiThread {
+                edgeImageView.setImageBitmap(edgeBitmap)
             }
 
-        } catch (e: Exception) {
-            Log.e(TAG, "Error processing image", e)
-        } finally {
-            imageProxy.close()
+            image.close()
         }
     }
 
-    @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
     private fun ImageProxy.toBitmap(): Bitmap {
         val buffer = planes[0].buffer
         val bytes = ByteArray(buffer.remaining())
         buffer.get(bytes)
-        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        // Simple conversion - you might want to improve this
+        return bitmap
+    }
+
+    private fun detectEdges(bitmap: Bitmap): Bitmap {
+        val mat = Mat(bitmap.height, bitmap.width, CvType.CV_8UC4)
+        val grayMat = Mat()
+        val edgesMat = Mat()
+
+        // Convert bitmap to Mat
+        org.opencv.android.Utils.bitmapToMat(bitmap, mat)
+
+        // Convert to grayscale
+        Imgproc.cvtColor(mat, grayMat, Imgproc.COLOR_RGBA2GRAY)
+
+        // Apply Gaussian blur
+        Imgproc.GaussianBlur(grayMat, grayMat, Size(5.0, 5.0), 0.0)
+
+        // Apply Canny edge detection
+        Imgproc.Canny(grayMat, edgesMat, 50.0, 150.0)
+
+        // Convert back to bitmap
+        val resultBitmap = Bitmap.createBitmap(
+            edgesMat.cols(),
+            edgesMat.rows(),
+            Bitmap.Config.ARGB_8888
+        )
+        org.opencv.android.Utils.matToBitmap(edgesMat, resultBitmap)
+
+        // Release Mats
+        mat.release()
+        grayMat.release()
+        edgesMat.release()
+
+        return resultBitmap
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
-        nativeProcessor.releaseNative()
     }
 }
+

@@ -5,20 +5,24 @@ project("edgedetectionviewer")
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Set OpenCV directory
-set(OPENCV_DIR ${CMAKE_SOURCE_DIR}/../../../../../opencv/sdk/native/jni)
+set(OpenCV_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../opencv/sdk/native/jni)
 
 # Find OpenCV package
 find_package(OpenCV REQUIRED)
 
+message(STATUS "OpenCV found: ${OpenCV_VERSION}")
+message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
+
 # Include directories
 include_directories(
-        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${OpenCV_INCLUDE_DIRS}
 )
 
-# Add native source files
+# Add library with your native source files
 add_library(
         native-processor
         SHARED
@@ -26,13 +30,17 @@ add_library(
         EdgeDetector.cpp
 )
 
-# Link libraries
+# IMPORTANT: Link all required libraries in correct order
 target_link_libraries(
         native-processor
-        ${OpenCV_LIBS}
-        android
-        log
-        jnigraphics
-        GLESv2
-        EGL
+        ${OpenCV_LIBS}      # OpenCV libraries first
+        android             # Android system
+        log                 # Android logging
+        jnigraphics         # Bitmap access
+        GLESv2              # OpenGL ES 2.0
+        EGL                 # EGL for OpenGL
+        c++_shared          # C++ standard library (CRITICAL!)
 )
+
+# Set C++ features
+target_compile_features(native-processor PUBLIC cxx_std_17)
