@@ -3,43 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edge Detection Web Viewer</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Edge Detection Viewer</title>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #000; color: #fff; }
+        #viewer { position: relative; width: 100vw; height: 100vh; }
+        #canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+        #stats { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; }
+    </style>
 </head>
 <body>
-<div class="container">
-    <header>
-        <h1>🎥 Edge Detection Web Viewer</h1>
-        <p>TypeScript-based frame visualization tool</p>
-    </header>
-
-    <main>
-        <div class="viewer-section">
-            <canvas id="frameCanvas"></canvas>
+    <div id="viewer">
+        <canvas id="canvas"></canvas>
+        <div id="stats">
+            <div>FPS: <span id="fps">15.2</span></div>
+            <div>Resolution: <span id="resolution">640x480</span></div>
         </div>
-
-        <div class="controls-section">
-            <div class="button-group">
-                <button id="loadSample" class="btn btn-primary">Load Sample Frame</button>
-                <button id="loadFile" class="btn btn-secondary">Load from File</button>
-                <button id="clear" class="btn btn-danger">Clear</button>
-            </div>
-            <input type="file" id="fileInput" accept="image/*" style="display: none;">
-        </div>
-
-        <div class="stats-section">
-            <h2>Frame Statistics</h2>
-            <div id="statsDisplay" class="stats-container">
-                <p>No frame loaded</p>
-            </div>
-        </div>
-    </main>
-
-    <footer>
-        <p>Built with TypeScript | OpenCV Edge Detection Viewer</p>
-    </footer>
-</div>
-
-<script type="module" src="dist/main.js"></script>
+    </div>
+    <script type="module" src="./dist/viewer.js"></script>
 </body>
 </html>
