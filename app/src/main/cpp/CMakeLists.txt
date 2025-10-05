@@ -2,45 +2,40 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project("edgedetectionviewer")
 
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+# Set C++ standard (matches build.gradle.kts)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Set OpenCV directory
-set(OpenCV_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../opencv/sdk/native/jni)
+# Set OpenCV directory (absolute path to your SDK)
+set(OpenCV_DIR "C:/Users/Suryansh Ayush/Downloads/opencv-4.8.0-android-sdk/OpenCV-android-sdk/sdk/native/jni")
 
 # Find OpenCV package
 find_package(OpenCV REQUIRED)
-
-message(STATUS "OpenCV found: ${OpenCV_VERSION}")
+message(STATUS "OpenCV version: ${OpenCV_VERSION}")
+message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
 
-# Include directories
-include_directories(
+# Add library with your native source files
+add_library(
+        native-lib
+        SHARED
+        native-lib.cpp
+)
+
+# Include directories (project + OpenCV)
+target_include_directories(
+        native-lib
+        PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${OpenCV_INCLUDE_DIRS}
 )
 
-# Add library with your native source files
-add_library(
-        native-processor
-        SHARED
-        native-lib.cpp
-        EdgeDetector.cpp
-)
-
-# IMPORTANT: Link all required libraries in correct order
+# Link libraries (OpenCV first, then Android essentials)
 target_link_libraries(
-        native-processor
-        ${OpenCV_LIBS}      # OpenCV libraries first
-        android             # Android system
+        native-lib
+        ${OpenCV_LIBS}      # OpenCV core + imgproc
+        android             # Android NDK
         log                 # Android logging
-        jnigraphics         # Bitmap access
-        GLESv2              # OpenGL ES 2.0
-        EGL                 # EGL for OpenGL
-        c++_shared          # C++ standard library (CRITICAL!)
+        jnigraphics         # JNI Bitmap access
+        c++_shared          # C++ STL (matches Gradle)
 )
-
-# Set C++ features
-target_compile_features(native-processor PUBLIC cxx_std_17)
