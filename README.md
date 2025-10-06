@@ -23,7 +23,7 @@ A minimal Android app that captures camera frames, processes them using OpenCV i
 
 ### Web Viewer
 - Static Processed Frame with Stats:
-  ![Web Viewer](screenshots/filestructure3.jpg "TypeScript page showing base64 edge frame and mock FPS/resolution overlay")
+  ![Web Viewer](screenshots/filestructure3.png "TypeScript page showing base64 edge frame and mock FPS/resolution overlay")
 
 ## Setup Instructions (NDK, OpenCV Dependencies)
 ### Prerequisites
