@@ -12,6 +12,63 @@ A minimal Android app that captures camera frames, processes them using OpenCV i
 - **OpenGL Shaders**: Fragment shader applies visual effects (grayscale via luminance, invert RGB) to enhance edge contrast.
 - **WebSocket/HTTP Endpoint**: Not implemented (mock endpoint could be added for dynamic frame serving).
 
+# Project File Structure
+
+```text
+EdgeDetectionViewer (project root)
+├── app
+│   ├── build
+│   ├── libs
+│   ├── opencv (OpenCV Android SDK)
+│   │   └── (various ABI folders like abi-arm64-v8a, abi-armeabi-v7a, etc., with .mk files and OpenCVConfig.cmake)
+│   ├── src
+│   │   ├── androidTest
+│   │   ├── main
+│   │   │   ├── cpp (native OpenCV processing)
+│   │   │   │   ├── CMakeLists.txt
+│   │   │   │   ├── EdgeDetector.cpp
+│   │   │   │   └── EdgeDetector.h
+│   │   │   ├── native-lib.cpp
+│   │   │   ├── java
+│   │   │   │   └── com.example.edgedetectionviewer
+│   │   │   │       ├── gl (OpenGL renderer classes)
+│   │   │   │       ├── processors
+│   │   │   │       ├── EdgeDetectionRenderer.kt
+│   │   │   │       └── MainActivity.kt
+│   │   │   ├── res (resources)
+│   │   │   └── AndroidManifest.xml
+│   │   ├── test
+│   │   └── .gitignore
+│   └── build.gradle.kts
+├── build
+├── gradle
+├── node_modules (for web dependencies)
+├── opencv (additional OpenCV files)
+├── web (TypeScript web viewer)
+│   ├── dist (build JS files)
+│   ├── node_modules
+│   ├── src (source files)
+│   ├── .gitignore
+│   ├── base64.txt (optional base64 export)
+│   └── build.gradle.kts (optional if integrated)
+├── edge_sample.png (sample frame)
+├── gradle.properties
+├── gradlew
+├── gradlew.bat
+├── index.html
+├── local.properties
+├── package.json
+├── package-lock.json
+├── README.md
+├── tsconfig.json
+├── viewer.ts
+├── .gitignore
+├── build.gradle.kts
+├── README.md
+├── settings.gradle.kts
+└── screenshots (for documentation images)
+
+
 ## Screenshots of the Working App
 ### Android App
 - Raw Camera Feed:
