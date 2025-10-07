@@ -67,7 +67,7 @@ EdgeDetectionViewer (project root)
 ├── README.md
 ├── settings.gradle.kts
 └── screenshots (for documentation images)
-
+```
 
 ## Screenshots of the Working App
 ### Android App
