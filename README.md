@@ -71,10 +71,10 @@ EdgeDetectionViewer (project root)
 
 ## Screenshots of the Working App
 ### Android App
-- Raw Camera Feed:
-  ![Raw Camera Feed](screenshots/filestructure1.jpg "Raw camera input in full screen")
 - Edge-Detected Output:
-  ![Edge Output](screenshots/filestructure2.jpg "Real-time Canny edges with FPS overlay")
+  ![Edge Output](screenshots/filestructure1.jpg "Real-time Canny edges with FPS overlay")
+- ![Edge Output](screenshots/filestructure2.jpg "Real-time Canny edges with FPS overlay")
+- ![Edge Output](screenshots/filestructure4.jpg "Real-time Canny edges with FPS overlay")
 
 (Note: For a dynamic demo, record a GIF using AZ Screen Recorder or scrcpy: Toggle modes, cycle shader effects, and observe FPS updates. Example GIF: [demo.gif](screenshots/demo.gif))
 
