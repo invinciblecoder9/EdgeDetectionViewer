@@ -1,0 +1,24 @@
+{
+  "name": "edgedetectionviewer",
+  "version": "1.0.0",
+  "description": "A real-time Android application that performs edge detection using OpenCV in C++, renders frames with OpenGL ES, and includes a TypeScript web viewer.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/invinciblecoder9/EdgeDetectionViewer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/invinciblecoder9/EdgeDetectionViewer/issues"
+  },
+  "homepage": "https://github.com/invinciblecoder9/EdgeDetectionViewer#readme",
+  "devDependencies": {
+    "@types/node": "^24.6.2",
+    "typescript": "^5.9.3"
+  }
+}

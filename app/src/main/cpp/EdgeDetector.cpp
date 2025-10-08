@@ -9,31 +9,45 @@ EdgeDetector::~EdgeDetector() {
     LOGI("EdgeDetector destroyed");
 }
 
-double EdgeDetector::processFrame(unsigned char* srcData, int width, int height, unsigned char* dstData) {
+double EdgeDetector::processFrame(unsigned char* nv21Data, int width, int height, unsigned char* dstData) {
     auto start = std::chrono::high_resolution_clock::now();
 
     try {
-        // Create Mat from input data (RGBA format)
-        cv::Mat srcMat(height, width, CV_8UC4, srcData);
-        cv::Mat dstMat(height, width, CV_8UC4, dstData);
+        // Reusable Mats
+        if (yuvMat.size() != cv::Size(width, height * 3 / 2)) {
+            yuvMat = cv::::Mat(height * 3 / 2, width, CV_8UC1);
+            gray = cv::Mat(height, width, CV_8UC1);
+            blur = cv::Mat(height, width, CV_8UC1);
+            edges = cv::Mat(height, width, CV_8UC1);
+            strongEdges = cv::Mat(height, width, CV_8UC1);
+        }
+
+        // Assign NV21 data
+        yuvMat.data = nv21Data;
 
         if (!processingEnabled) {
-            // Just copy the original frame
-            srcMat.copyTo(dstMat);
+            // Copy original (but from NV21, convert to RGBA)
+            cv::cvtColor(yuvMat, cv::Mat(height, width, CV_8UC4, dstData), cv::COLOR_YUV2RGBA_NV21);
         } else {
             // Convert to grayscale
-            cv::Mat gray;
-            cv::cvtColor(srcMat, gray, cv::COLOR_RGBA2GRAY);
+            cv::cvtColor(yuvMat, gray, cv::COLOR_YUV2GRAY_NV21);
 
-            // Apply Gaussian blur to reduce noise
-            cv::GaussianBlur(gray, gray, cv::Size(5, 5), 1.5);
+            // Equalize histogram
+            cv::equalizeHist(gray, gray);
 
-            // Apply Canny edge detection
-            cv::Mat edges;
-            cv::Canny(gray, edges, lowThreshold, highThreshold);
+            // Gaussian blur
+            cv::GaussianBlur(gray, blur, cv::Size(5, 5), 1.5);
 
-            // Convert back to RGBA for display
-            cv::cvtColor(edges, dstMat, cv::COLOR_GRAY2RGBA);
+            // Canny
+            cv::Canny(blur, edges, lowThreshold, highThreshold, 3);
+
+            // Threshold and dilate
+            cv::threshold(edges, strongEdges, 50, 255, cv::THRESH_BINARY);
+            cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+            cv::dilate(strongEdges, strongEdges, kernel, cv::Point(-1, -1), 1);
+
+            // To RGBA
+            cv::cvtColor(strongEdges, cv::Mat(height, width, CV_8UC4, dstData), cv::COLOR_GRAY2RGBA);
         }
 
         auto end = std::chrono::high_resolution_clock::now();
