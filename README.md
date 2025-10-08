@@ -76,8 +76,6 @@ EdgeDetectionViewer (project root)
 - ![Edge Output](screenshots/filestructure2.jpg "Real-time Canny edges with FPS overlay")
 - ![Edge Output](screenshots/filestructure4.jpg "Real-time Canny edges with FPS overlay")
 
-(Note: For a dynamic demo, record a GIF using AZ Screen Recorder or scrcpy: Toggle modes, cycle shader effects, and observe FPS updates. Example GIF: [demo.gif](screenshots/demo.gif))
-
 ### Web Viewer
 - Static Processed Frame with Stats:
   ![Web Viewer](screenshots/filestructure3.png "TypeScript page showing base64 edge frame and mock FPS/resolution overlay")
@@ -101,6 +99,19 @@ EdgeDetectionViewer (project root)
 2. Install dependencies: `npm install -D typescript @types/node`.
 3. Build: `npx tsc` (outputs to `/dist/viewer.js`).
 4. Serve: Use VS Code Live Server extension (right-click `index.html` > Open with Live Server) or `python -m http.server 8000`—visit `localhost:8000/index.html`.
+## Architecture Overview
+**JNI & OpenCV Integration**
+1. MainActivity.kt captures YUV frames using CameraX.
+2. Kotlin converts frames → ARGB → JNI call.
+3. Native C++ (native-lib.cpp) uses OpenCV for Canny edge detection with Gaussian blur.
+4. The processed ARGB buffer is returned to Kotlin, and the OpenGL renderer updates the texture in real time.
+
+**Frame Flow**
+1. CameraX captures frames.
+2. JNI Bridge sends them to C++.
+3. OpenCV applies edge detection.
+4. OpenGL Renderer displays the processed output at ~21 FPS.
+5. Overlay shows live FPS and processing statistics.
 
 ## Quick Explanation of Architecture (JNI, Frame Flow, TypeScript Part)
 The app follows a modular architecture with separate concerns for camera access, native processing, rendering, and web viewing.
